@@ -3,6 +3,7 @@ This script adds different types of noise to a directory of wav files, yielding 
 
 ## Usage
 ```
+pip install pathlib, librosa, syllables, tqdm, pydub, pysndfx, tensorflow
 unzip noise_wavs.zip
 python3 noise_adder.py samples noisy_samples --overwrite=True
 ```
