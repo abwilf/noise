@@ -9,3 +9,5 @@ python3 noise_adder.py samples noisy_samples --overwrite=True
 
 See `add_noise` docstring for details about the options.  You can modify them as needed in `add_noise_dirs`.
 
+## Credits
+Large portions of this script were adapted from Mimansa Jaiswal.
