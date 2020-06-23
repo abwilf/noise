@@ -318,6 +318,7 @@ def add_noise_dirs(in_dir, out_dir, overwrite=False):
         *packed,
     ]
 
+    # e.g.
     # options = [
     #     ('env_co', ('h', -10)),
     #     ('env_co', ('i', -10)),
