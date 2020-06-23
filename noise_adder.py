@@ -237,13 +237,12 @@ def add_noise_dir(in_dir, out_dir, option, modifier=None, overwrite=False):
         else:
             print(out_dir+' exists.  If you wish to overwrite, use flag overwrite=True')
             return
-    # progbar = keras.utils.Progbar(len(os.listdir(in_dir)))
+    print(f'Adding noise for option {option}, modifier {modifier} to {in_dir} -> {out_dir}...')
     os.makedirs(out_dir)
-    for elt in os.listdir(in_dir):
+    for elt in tqdm(os.listdir(in_dir)):
         file_in = os.path.join(in_dir, elt)
         file_out = os.path.join(out_dir, elt)
         add_noise(file_in, file_out, option, modifier)
-        # progbar.add(1)
 
 def add_noise_dir_randomized(in_dir, out_dir, overwrite=False):
     print(f'\nWriting noisy wavs to {out_dir}')
@@ -265,7 +264,6 @@ def add_noise_dir_randomized(in_dir, out_dir, overwrite=False):
             print(out_dir+' exists.  If you wish to overwrite, use flag overwrite=True')
             return
     
-    # progbar = keras.utils.Progbar(len(os.listdir(in_dir)))
     os.makedirs(out_dir)
     for elt in os.listdir(in_dir):
 
@@ -282,7 +280,6 @@ def add_noise_dir_randomized(in_dir, out_dir, overwrite=False):
         y, sr = librosa.load(file_out, sr=sr_orig)
         os.remove(file_out)
         librosa.output.write_wav(file_out, y, sr=sr)
-        # progbar.add(1)
     
 def tuple_to_strs(tup):
     return list(map(lambda elt: str(elt), tup))
@@ -308,30 +305,31 @@ def add_noise_dirs(in_dir, out_dir, overwrite=False):
     c = [10, 0, -10]
     packed = list(map(lambda elt: (elt[0], (elt[1], elt[2])), list(itertools.product(a,b,c))))
 
-    # options = [
-    #     ('env_st', 'n'),
-    #     ('env_st', 'h'),
-    #     ('env_st', 'i'),
-    #     ('fade', 'in'),
-    #     ('fade', 'out'),
-    #     ('reverb', None),
-    #     ('muffle', 150),
-    #     ('muffle', 300),
-    #     ('muffle', 550),
-    #     *packed,
-    # ]
-
     options = [
-        ('env_co', ('h', '-10')),
-        ('env_co', ('i', '-10')),
-        ('env_co', ('n', '-10')),
+        ('env_st', 'n'),
+        ('env_st', 'h'),
+        ('env_st', 'i'),
         ('fade', 'in'),
         ('fade', 'out'),
         ('reverb', None),
         ('muffle', 150),
+        ('muffle', 300),
+        ('muffle', 550),
+        *packed,
     ]
 
-    for option in tqdm(options):
+    # options = [
+    #     ('env_co', ('h', -10)),
+    #     ('env_co', ('i', -10)),
+    #     ('env_co', ('n', -10)),
+    #     ('fade', 'in'),
+    #     ('fade', 'out'),
+    #     ('reverb', None),
+    #     ('muffle', 150),
+    # ]
+
+    progbar = keras.utils.Progbar(len(options))
+    for option in options:
         dirname = None
         if type(option[1]) == tuple:
             dirname = '__'.join((option[0], '___'.join(tuple_to_strs(option[1]))))
@@ -341,7 +339,9 @@ def add_noise_dirs(in_dir, out_dir, overwrite=False):
             dirname = '__'.join(option)
 
         add_noise_dir(in_dir, os.path.join(out_dir, dirname), option=option[0], modifier=option[1], overwrite=True)
-
+        
+        print('\nTotal Progress:')
+        progbar.add(1)
 
 if __name__ == '__main__':
     '''usage: python3 noise_adder.py ./orig_wavs ./noisy_wavs -o True'''
