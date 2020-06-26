@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 # derived from mimansa's code!
 import random, librosa, json, syllables, math, array, csv, shutil, os, argparse, pathlib, itertools
 from tqdm import tqdm
@@ -10,9 +10,9 @@ import numpy as np
 from random import shuffle
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 from tensorflow import keras
-human_f = glob('./noise_wavs/human/*.wav')
-interior_f = glob('./noise_wavs/interior/*.wav')
-natural_f = glob('./noise_wavs/natural/*.wav')
+human_f = glob('/z/abwilf/noise/noise_wavs/human/*.wav')
+interior_f = glob('/z/abwilf/noise/noise_wavs/interior/*.wav')
+natural_f = glob('/z/abwilf/noise/noise_wavs/natural/*.wav')
 
 auto_change = -22
 fx = (AudioEffectsChain().reverb())
@@ -187,6 +187,9 @@ def add_noise(file_in, file_out, option, modifier=None):
     laugh: modifier: 'f', 'm' - sex of speaker in utterance
     muffle: modifier: rate (700: a little, 350: medium, 150: a lot)
     '''
+    if os.path.exists(file_out):
+        return
+
     try:
         orig_f = AudioSegment.from_wav(file_in)
     except:
@@ -228,105 +231,73 @@ def add_noise(file_in, file_out, option, modifier=None):
     elif option == 'muffle':
         muffle(file_in, file_out, modifier)
 
+def mkdirp(dir_path):
+    if not os.path.isdir(dir_path):
+        pathlib.Path(dir_path).mkdir(parents=True)
+
 def add_noise_dir(in_dir, out_dir, option, modifier=None, overwrite=False):
     # Remove and recreate out_dir with noise from in_dir
-    if os.path.exists(out_dir):
-        if overwrite:
-            shutil.rmtree(out_dir)
-        else:
-            print(out_dir+' exists.  If you wish to overwrite, use flag overwrite=True')
-            return
-    print(f'Adding noise for option {option}, modifier {modifier} to {in_dir} -> {out_dir}...')
-    os.makedirs(out_dir)
+    # if os.path.exists(out_dir):
+    #     if overwrite:
+    #         shutil.rmtree(out_dir)
+    #     else:
+    #         print(out_dir+' exists.  If you wish to overwrite, use flag overwrite=True')
+    #         return
+    print(f'\nAdding noise for option {option}, modifier {modifier} to {in_dir} -> {out_dir}...')
+    mkdirp(out_dir)
     for elt in tqdm(os.listdir(in_dir)):
         file_in = os.path.join(in_dir, elt)
         file_out = os.path.join(out_dir, elt)
         add_noise(file_in, file_out, option, modifier)
-
-def add_noise_dir_randomized(in_dir, out_dir, overwrite=False):
-    print(f'\nWriting noisy wavs to {out_dir}')
-    env_types = ['n', 'h', 'i']
-    options_modifiers = {
-        # 'fade': ['in', 'out'],
-        'muffle': np.arange(MUFFLE_RANGE_LOW, MUFFLE_RANGE_HIGH),
-        'env_st': env_types,
-        'reverb': [''],
-        'env_co': [(elt1, elt2) for elt1 in env_types for elt2 in np.arange(SNR_RANGE_LOW, SNR_RANGE_HIGH)]
-    }
-
-    # Remove and recreate out_dir with noise from in_dir
-    if os.path.exists(out_dir):
-        if overwrite:
-            print('Removing and rewriting ' + out_dir)
-            shutil.rmtree(out_dir)
-        else:
-            print(out_dir+' exists.  If you wish to overwrite, use flag overwrite=True')
-            return
-    
-    os.makedirs(out_dir)
-    for elt in os.listdir(in_dir):
-
-        # randomly select option & modifier
-        option = random.choice(list(options_modifiers.keys()))
-        modifier = random.choice(options_modifiers[option])
-
-        file_in = os.path.join(in_dir, elt)
-        file_out = os.path.join(out_dir, elt)
-        add_noise(file_in, file_out, option, modifier)
-
-        # downsample to ensure same number of samples as original
-        sr_orig = librosa.load(file_in, sr=None)[1]
-        y, sr = librosa.load(file_out, sr=sr_orig)
-        os.remove(file_out)
-        librosa.output.write_wav(file_out, y, sr=sr)
     
 def tuple_to_strs(tup):
     return list(map(lambda elt: str(elt), tup))
 
-def rm_mkdirp(dir_path, overwrite=False, quiet=False):
-    if os.path.isdir(dir_path):
-        if overwrite:
-            if not quiet:
-                print('Removing ' + dir_path)
-            shutil.rmtree(dir_path, ignore_errors=True)
+# def rm_mkdirp(dir_path, overwrite=False, quiet=False):
+#     if os.path.isdir(dir_path):
+#         if overwrite:
+#             if not quiet:
+#                 print('Removing ' + dir_path)
+#             shutil.rmtree(dir_path, ignore_errors=True)
 
-        else:
-            print('Directory ' + dir_path + ' exists and overwrite flag not set to true.  Exiting.')
-            exit(1)
-    if not quiet:
-        print('Creating ' + dir_path)
-    pathlib.Path(dir_path).mkdir(parents=True)
+#         else:
+#             print('Directory ' + dir_path + ' exists and overwrite flag not set to true.  Exiting.')
+#             exit(1)
+#     if not quiet:
+#         print('Creating ' + dir_path)
+#     pathlib.Path(dir_path).mkdir(parents=True)
 
 def add_noise_dirs(in_dir, out_dir, overwrite=False):
-    rm_mkdirp(out_dir, overwrite=overwrite)
+    # rm_mkdirp(out_dir, overwrite=overwrite)
     a = ['env_co']
     b = ['n', 'h', 'i']
     c = [10, 0, -10]
     packed = list(map(lambda elt: (elt[0], (elt[1], elt[2])), list(itertools.product(a,b,c))))
 
-    options = [
-        ('env_st', 'n'),
-        ('env_st', 'h'),
-        ('env_st', 'i'),
-        ('fade', 'in'),
-        ('fade', 'out'),
-        ('reverb', None),
-        ('muffle', 150),
-        ('muffle', 300),
-        ('muffle', 550),
-        *packed,
-    ]
-
-    # e.g.
     # options = [
-    #     ('env_co', ('h', -10)),
-    #     ('env_co', ('i', -10)),
-    #     ('env_co', ('n', -10)),
+    #     ('env_st', 'n'),
+    #     ('env_st', 'h'),
+    #     ('env_st', 'i'),
     #     ('fade', 'in'),
     #     ('fade', 'out'),
     #     ('reverb', None),
     #     ('muffle', 150),
+    #     ('muffle', 300),
+    #     ('muffle', 550),
+    #     *packed,
     # ]
+
+    # e.g.
+    options = [
+        # ('env_co', ('h', -10)),
+        # ('env_co', ('i', -10)),
+        ('env_co', ('n', -10)),
+        # ('env_st', 'i'),
+        # ('env_st', 'n'),
+        # ('env_st', 'h'),
+        # ('muffle', 150),
+        ('reverb', None),
+    ]
 
     progbar = keras.utils.Progbar(len(options))
     for option in options:
@@ -338,7 +309,7 @@ def add_noise_dirs(in_dir, out_dir, overwrite=False):
             option = tuple_to_strs(option)
             dirname = '__'.join(option)
 
-        add_noise_dir(in_dir, os.path.join(out_dir, dirname), option=option[0], modifier=option[1], overwrite=True)
+        add_noise_dir(in_dir, os.path.join(out_dir, dirname), option=option[0], modifier=option[1], overwrite=overwrite)
         
         print('\nTotal Progress:')
         progbar.add(1)
