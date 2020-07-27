@@ -245,6 +245,7 @@ def add_noise_dir(in_dir, out_dir, option, modifier=None, overwrite=False):
             shutil.rmtree(out_dir)
         else:
             print(f'\nPath {out_dir} exists and overwrite=False.  Skipping...')
+            return
 
     print(f'\nAdding noise for option {option}, modifier {modifier} to {in_dir} -> {out_dir}...')
     mkdirp(out_dir)
@@ -295,7 +296,7 @@ def add_noise_dirs(in_dir, out_dir, overwrite=False, options=None):
             # ('env_st', 'h'),
         ]
 
-    print('\nTotal Progress:')
+    print('\nAdding noise: total Progress:')
     for option in tqdm(options):
         dirname = None
         if type(option[1]) == tuple:
