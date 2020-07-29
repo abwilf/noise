@@ -10,6 +10,7 @@ from pysndfx import AudioEffectsChain
 from string import punctuation
 import numpy as np
 from random import shuffle
+import soundfile as sf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 from tensorflow import keras
 human_f = glob('/z/abwilf/noise/noise_wavs/human/*.wav')
@@ -150,6 +151,8 @@ def dropl(orig_f, utt_json):
 
 def reverb(wav_file_name_in, wav_file_name_out):
     fx(wav_file_name_in, wav_file_name_out)
+    y, _ = librosa.load(wav_file_name_out, sr=16000)
+    sf.write(wav_file_name_out, y, 16000)
 
 def laugh(orig_f, laugh_f):
     return orig_f+laugh_f
@@ -172,6 +175,8 @@ def pitch(wav_file_name_in, wav_file_name_out, updown):
 def muffle(file_in, file_out, modifier):
     fx_muffle = (AudioEffectsChain().lowpass(modifier))
     fx_muffle(file_in, file_out)
+    y, _ = librosa.load(file_out, sr=16000)
+    sf.write(file_out, y, 16000)
 
 def get_len(orig_f):
     return orig_f.duration_seconds
@@ -270,7 +275,8 @@ def add_noise_dir(in_dir, out_dir, option, modifier=None, overwrite=False):
     #     add_noise(*input)
     # exit()
 
-    pool.starmap(add_noise, inputs)
+    x = pool.starmap(add_noise, inputs)
+    [elt for elt in x] # forces errors to propagate
     pool.close()
     pool.join()
     
