@@ -254,6 +254,9 @@ def mkdirp(dir_path):
         pathlib.Path(dir_path).mkdir(parents=True)
 
 def add_noise_dir(in_dir, out_dir, option, modifier=None, overwrite=False):
+    if in_dir == out_dir:
+        print(f'Cannot add noise to the same directory because filenames remain the same.\nin_dir: {in_dir}\nout_dir: {out_dir}')
+        return
     if os.path.exists(out_dir):
         if overwrite:
             shutil.rmtree(out_dir)
