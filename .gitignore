@@ -3,3 +3,4 @@ noise_wavs
 noisy_samples_backup
 noisy_samples_*
 *.wav
+*.pyc

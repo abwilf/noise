@@ -202,6 +202,7 @@ def add_noise(file_in, file_out, option, modifier=None):
     if option == 'speedu':
         assert_modifier(modifier, option)
         try:
+            modifier = float(modifier)
             speed_u(file_in, file_out, modifier)
         except:
             print("Speed utterance didn't work:", file_in)
@@ -209,7 +210,9 @@ def add_noise(file_in, file_out, option, modifier=None):
     elif option == 'fade':
         assert_modifier(modifier, option)
         try:
-            fade(orig_f, modifier).export(file_out, format='wav')
+            orig_f = fade(orig_f, modifier)
+            orig_f = orig_f.set_frame_rate(16000)
+            orig_f.export(file_out, format='wav')
         except:
             print("Fade utterance didn't work:", file_in)
 
@@ -224,13 +227,19 @@ def add_noise(file_in, file_out, option, modifier=None):
         reverb(file_in,  file_out)
 
     elif option == 'env_st':
-        env_st(orig_f, modifier).export(file_out, format="wav")
+        orig_f = env_st(orig_f, modifier)
+        orig_f = orig_f.set_frame_rate(16000)
+        orig_f.export(file_out, format="wav")
     
     elif option == 'env_co':
         sound_type, snr = modifier
-        env_co(orig_f, sound_type, snr).export(file_out, format='wav')
+        snr = float(snr)
+        orig_f = env_co(orig_f, sound_type, snr)
+        orig_f = orig_f.set_frame_rate(16000)
+        orig_f.export(file_out, format='wav')
 
     elif option == 'muffle':
+        modifier = float(modifier)
         muffle(file_in, file_out, modifier)
     
     p.add(1)
@@ -251,10 +260,15 @@ def add_noise_dir(in_dir, out_dir, option, modifier=None, overwrite=False):
     mkdirp(out_dir)
     num_workers = 6
     pool = mp.Pool(num_workers)
-    inputs = [(os.path.join(in_dir, elt), os.path.join(out_dir, elt), option, modifier) for elt in os.listdir(in_dir)]
+    inputs = [(os.path.join(in_dir, elt), os.path.join(out_dir, elt), option, modifier) for elt in list(filter(lambda elt: not os.path.isdir(os.path.join(in_dir, elt)), os.listdir(in_dir)))]
     
     global p
     p = Progbar(len(inputs)) 
+
+    # # testing
+    # for input in inputs:
+    #     add_noise(*input)
+    # exit()
 
     pool.starmap(add_noise, inputs)
     pool.close()
@@ -262,6 +276,29 @@ def add_noise_dir(in_dir, out_dir, option, modifier=None, overwrite=False):
     
 def tuple_to_strs(tup):
     return list(map(lambda elt: str(elt), tup))
+
+def parse_opt_mod(a):
+    '''
+    a = 'env_co__i___-10' -> (env_co, (i, -10))
+    a = 'reverb__None' ->  (reverb, None)
+    '''
+    tot = a.split('___')
+    if len(tot) > 1:
+        modifier = tot[0].split('__')[-1], tot[1]
+    else:
+        modifier = tot[0].split('__')[-1]
+    option = a.split('__')[0]
+    return option, modifier
+
+def opt_mod_to_str(opt, mod):
+    s = None
+    if type(mod) == tuple:
+        s = '__'.join((opt, '___'.join(tuple_to_strs(mod))))
+
+    else:
+        combined = tuple_to_strs((opt, mod))
+        s = '__'.join((combined))
+    return s
 
 def add_noise_dirs(in_dir, out_dir, overwrite=False, options=None):
     a = ['env_co']
@@ -297,16 +334,8 @@ def add_noise_dirs(in_dir, out_dir, overwrite=False, options=None):
         ]
 
     print('\nAdding noise: total Progress:')
-    for option in tqdm(options):
-        dirname = None
-        if type(option[1]) == tuple:
-            dirname = '__'.join((option[0], '___'.join(tuple_to_strs(option[1]))))
-
-        else:
-            option = tuple_to_strs(option)
-            dirname = '__'.join(option)
-
-        add_noise_dir(in_dir, os.path.join(out_dir, dirname), option=option[0], modifier=option[1], overwrite=overwrite)
+    for opt, mod in tqdm(options):
+        add_noise_dir(in_dir, os.path.join(out_dir, opt_mod_to_str(opt, mod)), option=opt, modifier=mod, overwrite=overwrite)
         
 if __name__ == '__main__':
     '''usage: python3 noise_adder.py ./orig_wavs ./noisy_wavs -o True'''
