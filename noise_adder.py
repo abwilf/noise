@@ -255,13 +255,13 @@ def mkdirp(dir_path):
 
 def add_noise_dir(in_dir, out_dir, option, modifier=None, overwrite=False):
     if in_dir == out_dir:
-        print(f'Cannot add noise to the same directory because filenames remain the same.\nin_dir: {in_dir}\nout_dir: {out_dir}')
+        print(f'Noise adding skipped because in_dir==out_dir=={in_dir}')
         return
     if os.path.exists(out_dir):
         if overwrite:
             shutil.rmtree(out_dir)
         else:
-            print(f'\nPath {out_dir} exists and overwrite=False.  Skipping...')
+            print(f'Noise adding skipped because {out_dir} exists and overwrite=False.  Moving on...')
             return
 
     print(f'\nAdding noise for option {option}, modifier {modifier} to {in_dir} -> {out_dir}...')
